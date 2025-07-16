@@ -1,0 +1,186 @@
+@import url("https://cdn.syncfusion.com/ej2/material.css");
+
+.sidebar {
+  box-shadow: rgb(113 122 131 / 11%) 0px 7px 30px 0px;
+}
+.nav-item,
+.navbar {
+  z-index: 10000;
+}
+@media screen and (max-width: 800px) {
+  .sidebar {
+    z-index: 10000000;
+  }
+}
+
+.e-dlg-center-center,
+.e-quick-popup-wrapper.e-device {
+  z-index: 1000000 !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgb(216, 216, 216);
+  border-radius: 40px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* color-picker style  */
+
+#preview {
+  background: transparent
+    url("https://ej2.syncfusion.com/react/demos/src/color-picker/images/pen.png")
+    no-repeat;
+  display: inline-block;
+  height: 80px;
+  margin: 10px 0;
+  min-width: 300px;
+  max-width: 600px;
+  background-color: #008000;
+}
+
+.e-input-group:not(.e-float-icon-left),
+.e-input-group.e-success:not(.e-float-icon-left),
+.e-input-group.e-warning:not(.e-float-icon-left),
+.e-input-group.e-error:not(.e-float-icon-left),
+.e-input-group.e-control-wrapper:not(.e-float-icon-left),
+.e-input-group.e-control-wrapper.e-success:not(.e-float-icon-left),
+.e-input-group.e-control-wrapper.e-warning:not(.e-float-icon-left),
+.e-input-group.e-control-wrapper.e-error:not(.e-float-icon-left) {
+  border: none;
+}
+.auth-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f3f3f3;
+}
+
+.auth-box {
+  display: flex;
+  flex-wrap: wrap;
+  width: 700px;
+  height: 400px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.auth-left,
+.auth-right {
+  flex: 1;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.auth-left {
+  background-color: #ffffff;
+}
+
+.auth-right {
+  background-color: #f0f0f0;
+  align-items: center;
+}
+
+.auth-form {
+  width: 100%;
+}
+
+.auth-input,
+.auth-btn {
+  width: 100%;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.df {
+  width: 150px;
+}
+
+.auth-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-btn:hover {
+  background-color: #0056b3;
+}
+
+.auth-label {
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.box {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 400px;
+  margin: 2rem auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.box input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.box input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.box button {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  display: block;
+  color: #333;
+  width: 150px;
+}
+
+.btp {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  width: 100%;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btp:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.btp:active {
+  transform: scale(0.98);
+}
+.alert-container {
+  position: fixed;
+  top: 20px; /* or bottom: 20px for bottom alerts */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999; /* ensure it is above all other elements */
+  padding: 10px 20px;
+}
