@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../components/GroupDashboard.css";
 import ac from "../data/avatar.jpg";
 import AddButton from "../components/AddButton";
+import { useLocation } from "react-router-dom";
+import axiosInstance from "../api/axiosInstance";
+import { useUser } from "../contexts/UserProvider";
 
 const GroupDashboard = () => {
+  const segment = useLocation().pathname.split("/").pop();
+  const { name } = useUser();
   const [expandedId, setExpandedId] = useState(null);
   const [show, set] = useState(null);
   const [num, setnum] = useState(7);
@@ -15,7 +20,7 @@ const GroupDashboard = () => {
   const dummyLogs = [
     {
       id: 1,
-      paidBy: "Alice",
+      paidBy: ["Alice"],
       items: [
         { name: "Pizza", price: 300 },
         { name: "Drinks", price: 150 },
@@ -28,82 +33,59 @@ const GroupDashboard = () => {
     },
     {
       id: 2,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 24,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 22,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 25,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 21,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 255,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 264,
-      paidBy: "David",
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-    {
-      id: 245,
-      paidBy: "David",
+      paidBy: ["David"],
       items: [{ name: "Snacks", price: 200 }],
       participants: [{ name: "Eve", amount: 200 }],
       time: "2025-06-13 18:30",
     },
   ];
   const [array, setarray] = useState(dummyLogs);
+  const [gname, setGname] = useState("");
+  const [amount, setAmount] = useState("");
+  const [users, setUser] = useState([]);
 
-  const users = [
-    { name: "Alice", image: { ac }, isHost: true },
-    { name: "Bob", image: "../data/avatar2.jpg" },
-    { name: "Charlie", image: "../data/avatar3.jpg" },
-    { name: "Diana", image: "../data/avatar4.jpg" },
-    { name: "Extra", image: "../data/avatar.jpg" },
-    { name: "Alice", image: { ac }, isHost: true },
-    { name: "Bob", image: "../data/avatar2.jpg" },
-    { name: "Charlie", image: "../data/avatar3.jpg" },
-    { name: "Diana", image: "../data/avatar4.jpg" },
-    { name: "Extra", image: "../data/avatar.jpg" }, // won't show due to max 4
-  ];
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const name = await axiosInstance.get(`/findgroupname/${segment}`);
+        setGname(name.data);
+
+        const amount = await axiosInstance.get(`/findtotal/${segment}`);
+        setAmount(amount.data);
+
+        const data = await axiosInstance.get(`/findlog/${segment}`);
+        setarray(data.data);
+
+        const usep = await axiosInstance.get(`/findalluser/${segment}`);
+        setUser(usep.data);
+        console.log(usep);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetch();
+  }, []);
+
+  // const users = [
+  //   { name: "Alice", image: { ac }, isHost: true },
+  //   { name: "Bob", image: "../data/avatar2.jpg" },
+  //   { name: "Charlie", image: "../data/avatar3.jpg" },
+  //   { name: "Diana", image: "../data/avatar4.jpg" },
+  //   { name: "Extra", image: "../data/avatar.jpg" },
+  //   { name: "Alice", image: { ac }, isHost: true },
+  //   { name: "Bob", image: "../data/avatar2.jpg" },
+  //   { name: "Charlie", image: "../data/avatar3.jpg" },
+  //   { name: "Diana", image: "../data/avatar4.jpg" },
+  //   { name: "Extra", image: "../data/avatar.jpg" }, // won't show due to max 4
+  // ];
 
   return (
     <div className="gbox flex-grow mt-24 mb-32">
       {<AddButton />}
       <div className="header">
-        <div className="lbox">Group Name</div>
-        <div className="rbox">Total Expense: ₹1000</div>
+        <div className="lbox">{gname}</div>
+        <div className="rbox">Total Expense: {amount}</div>
       </div>
 
       <div className="mid">
@@ -114,6 +96,7 @@ const GroupDashboard = () => {
                 <th>Paid By</th>
                 <th>Item</th>
                 <th>Participants</th>
+                <th>total Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -121,95 +104,24 @@ const GroupDashboard = () => {
                 <React.Fragment key={log.id}>
                   <tr>
                     <td>
-                      <button
-                        onClick={() => toggleDetails(log.id, 1)}
-                        className="name-btn"
-                      >
-                        {log.paidBy}
+                      <button className="name-btn">
+                        {log.paidBy.map((item) => item).join(", ")}
                       </button>
                     </td>
                     <td>
-                      <button
-                        onClick={() => toggleDetails(log.id, 2)}
-                        className="name-btn"
-                      >
-                        {log.items.map((item) => item.name).join(", ")}
+                      <button className="name-btn">
+                        {log.items.map((item) => item).join(", ")}
                       </button>
                     </td>
                     <td>
-                      <button
-                        onClick={() => toggleDetails(log.id, 3)}
-                        className="name-btn"
-                      >
-                        {log.participants.map((p) => p.name).join(", ")}
+                      <button className="name-btn">
+                        {log.participants.map((p) => p).join(", ")}
                       </button>
+                    </td>
+                    <td>
+                      <button className="name-btn">{log.amount}</button>
                     </td>
                   </tr>
-                  {expandedId === log.id && show === 1 && (
-                    <tr>
-                      <td colSpan="3">
-                        <div className="details-box">
-                          <strong>Items:</strong>
-                          <ul className="combined-list">
-                            {log.items.map((item, idx) => (
-                              <li key={idx + 200}>
-                                <span>{item.name}</span>
-                                <span>₹{item.price}</span>
-                              </li>
-                            ))}
-                          </ul>
-                          <strong>Participants:</strong>
-                          <ul className="combined-list">
-                            {log.participants.map((p, idx) => (
-                              <li key={idx + 100}>
-                                <span>{p.name}</span>
-                                <span>₹{p.amount}</span>
-                              </li>
-                            ))}
-                          </ul>
-                          <div>
-                            <em>{log.time}</em>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-
-                  {expandedId === log.id && show === 2 && (
-                    <tr>
-                      <td colSpan="3">
-                        <div className="details-box">
-                          <strong>Items:</strong>
-                          <ul className="combined-list">
-                            {log.items.map((item, idx) => (
-                              <li key={idx + 300}>
-                                <span>{item.name}</span>
-                                <span>₹{item.price}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-
-                  {expandedId === log.id && show === 3 && (
-                    <tr>
-                      <td colSpan="3">
-                        <div className="details-box">
-                          <strong>Participants:</strong>
-                          <ul className="combined-list">
-                            {log.participants.map((p, idx) => (
-                              <li key={idx + 500}>
-                                <span>{p.name}</span>
-                                <span>₹{p.amount}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               ))}
             </tbody>
@@ -233,7 +145,7 @@ const GroupDashboard = () => {
               src={user.image}
               alt={user.name}
               className={`w-16 h-16 rounded-full border-4 ${
-                user.isHost ? "border-yellow-500" : "border-gray-300"
+                user.name === name ? "border-yellow-500" : "border-gray-300"
               }`}
             />
             <p className="text-sm mt-1">{user.name}</p>

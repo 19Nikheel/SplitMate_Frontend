@@ -1,315 +1,392 @@
 import React, { useState } from "react";
-import Button from "./Button";
-import { MdOutlineCancel } from "react-icons/md";
+import axios from "axios";
+import { MdOutlineCancel, MdDelete } from "react-icons/md";
 import { useStateContext } from "../contexts/ContextProvider";
+import { useParams } from "react-router-dom";
+import axiosInstance from "../api/axiosInstance";
 
 const users = [
   { id: 1, name: "Alice" },
   { id: 2, name: "Bob" },
   { id: 3, name: "Charlie" },
-  { id: 13, name: "Alice" },
-  { id: 23, name: "Bob" },
-  { id: 33, name: "Charlie" },
 ];
 
 const AddExpenseMobile = () => {
   const { show, setShows } = useStateContext();
-  const [addedItems, setAddedItems] = useState([]);
-  // const [showInitial, setShows] = useState(initialState.add);
-  const [paymentType, setPaymentType] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [item, setItem] = useState("");
-  const [price, setPrice] = useState("");
-  const [payerInputs, setPayerInputs] = useState({}); // toggles input visibility for each user
-  const [payerAmounts, setPayerAmounts] = useState({}); // stores temp input amount for each user
-  const [payers, setPayers] = useState([]); // confirmed payers
-  const [totalPaid, setTotalPaid] = useState(0); // sum of all confirmed amounts
+  const { groupId } = useParams();
+  const [step, setStep] = useState(1);
+  const [description, setDescription] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+  const [paymentType, setPaymentType] = useState("");
+  const [payer, setPayer] = useState(null);
+  const [partialPayers, setPartialPayers] = useState({});
+  const [items, setItems] = useState([]);
+  const [itemName, setItemName] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [quantities, setQuantities] = useState({});
+  const [shared, setShared] = useState({});
+  const [sharedCounts, setSharedCounts] = useState({});
 
-  const [quantities, setQuantities] = useState(
-    users.reduce((acc, user) => ({ ...acc, [user.id]: 0 }), {})
-  );
-
-  const handleQuantity = (userId, delta) => {
-    setQuantities((prev) => ({
+  const handlePartialAmount = (userId, amount) => {
+    setPartialPayers((prev) => ({
       ...prev,
-      [userId]: Math.max(prev[userId] + delta, 0),
+      [userId]: parseFloat(amount) || 0,
     }));
   };
 
-  const togglePayerInput = (userId) => {
-    setPayerInputs((prev) => ({
+  const handleQuantity = (userId, qty) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [userId]: Math.max(parseInt(qty) || 0, 0),
+    }));
+  };
+
+  const toggleShared = (userId) => {
+    setShared((prev) => ({
       ...prev,
       [userId]: !prev[userId],
     }));
   };
 
-  const handlePayerAmount = (userId, amount) => {
-    setPayerAmounts((prev) => ({
+  const handleSharedCount = (userId, count) => {
+    setSharedCounts((prev) => ({
       ...prev,
-      [userId]: amount,
+      [userId]: parseInt(count) || 0,
     }));
-  };
-  const confirmPayerAmount = (userId) => {
-    const amount = parseFloat(payerAmounts[userId]);
-
-    if (!isNaN(amount) && amount > 0) {
-      // Avoid duplicate entries for the same user
-      setPayers((prev) => {
-        const updated = prev.filter((p) => p.userId !== userId);
-        return [...updated, { userId, amount }];
-      });
-
-      // Update total
-      setTotalPaid((prevTotal) => {
-        const previousAmount =
-          payers.find((p) => p.userId === userId)?.amount || 0;
-        return prevTotal - previousAmount + amount;
-      });
-
-      // Hide input
-      setPayerInputs((prev) => ({
-        ...prev,
-        [userId]: false,
-      }));
-    }
-  };
-
-  const bill = () => {
-    return price * Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
   };
 
   const handleAddItem = () => {
-    if (!item || !price) return;
+    if (!itemName || !unitPrice) return;
 
     const consumers = users
       .filter((u) => quantities[u.id] > 0)
-      .map((u) => u.id);
+      .map((u) => ({
+        name: u.name,
+        quantity: shared[u.id]
+          ? quantities[u.id] / (sharedCounts[u.id] || 1)
+          : quantities[u.id],
+        isShared: shared[u.id] ? sharedCounts[u.id] || 1 : 0,
+      }));
 
-    if (consumers.length === 0) return;
+    const totalItemCost =
+      parseFloat(unitPrice) * consumers.reduce((sum, c) => sum + c.quantity, 0);
 
-    const newItem = {
-      name: item,
-      price: parseFloat(price),
-      consumers,
-    };
+    setItems((prev) => [
+      ...prev,
+      {
+        itemName,
+        unitPrice: parseFloat(unitPrice),
+        quantity: consumers.reduce((sum, c) => sum + c.quantity, 0),
+        consumers,
+        totalItemCost,
+      },
+    ]);
 
-    setAddedItems([...addedItems, newItem]);
-    setItem("");
-    setPrice("");
-    setQuantities(users.reduce((acc, user) => ({ ...acc, [user.id]: 0 }), {}));
+    setItemName("");
+    setUnitPrice("");
+    setQuantities({});
+    setShared({});
+    setSharedCounts({});
   };
 
-  const handleOnClick = () => {
-    console.log("hui");
-    setAddedItems([]);
-    setShowForm(false);
-    setPaymentType(null);
-    setItem("");
-    setPrice("");
-    setPayerInputs({});
-    setPayerAmounts({});
-    setPayers([]);
-    setTotalPaid(0);
-
-    setQuantities(users.reduce((acc, user) => ({ ...acc, [user.id]: 0 }), {}));
+  const deleteItem = (index) => {
+    setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    console.log(addedItems);
+  const totalBill = items.reduce((sum, item) => sum + item.totalItemCost, 0);
+  const remainingAmount = parseFloat(totalAmount) - totalBill;
+  const tax = remainingAmount >= 0 ? remainingAmount : 0;
+
+  const handleSubmit = async () => {
+    if (!description || !totalAmount || items.length === 0) {
+      alert("Please fill all fields before submitting.");
+      return;
+    }
 
     const payload = {
-      paymentType,
-      addedItems,
+      description,
+      totalMoney: parseFloat(totalAmount),
+      tax,
+      groupId: groupId || "Test1",
+      payers:
+        paymentType === "Full"
+          ? [{ name: payer, amount: parseFloat(totalAmount) }]
+          : users
+              .filter((u) => partialPayers[u.id] > 0)
+              .map((u) => ({
+                name: u.name,
+                amount: partialPayers[u.id],
+              })),
+      items,
     };
 
-    console.log("Expense Submitted:", payload);
-    setAddedItems([]);
-    setShowForm(false);
-    setPaymentType(null);
-    setItem("");
-    setPrice("");
-    setPayerInputs({});
-    setPayerAmounts({});
-    setPayers([]);
-    setTotalPaid(0);
+    console.log("Submitting payload:", payload);
 
-    setQuantities(users.reduce((acc, user) => ({ ...acc, [user.id]: 0 }), {}));
+    try {
+      const res = await axiosInstance.post("/api/post", payload);
+      console.log("Expense saved:", res.data);
+      // Reset all
+      setShows(false);
+      setStep(1);
+      setDescription("");
+      setTotalAmount("");
+      setPaymentType("");
+      setPayer(null);
+      setPartialPayers({});
+      setItems([]);
+    } catch (err) {
+      console.error("Error saving expense:", err);
+    }
   };
 
   return (
     <div className="p-4">
-      {/* First Modal: Choose Full or Partial */}
       {show && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-20">
-          <div className="bg-white p-6 rounded-md shadow-md w-11/12 max-w-sm">
-            <h2 className="text-lg font-semibold mb-4 text-center">
-              Select Payment Type
-            </h2>
-            <div className="flex justify-around">
-              <button
-                className="bg-green-500 text-white px-4 py-2 rounded"
-                onClick={() => {
-                  setPaymentType("full");
-                  setShows(false);
-                  setShowForm(true);
-                }}
-              >
-                Full
-              </button>
-              <button
-                className="bg-yellow-500 text-white px-4 py-2 rounded"
-                onClick={() => {
-                  setPaymentType("Partial");
-                  setShows(false);
-                  setShowForm(true);
-                }}
-              >
-                Partial
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-20 overflow-auto">
+          <div className="bg-white p-4 rounded-md shadow-md w-11/12 max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setStep(1);
+                setShows(false);
+              }}
+            >
+              <MdOutlineCancel size={24} />
+            </button>
 
-      {/* Second Modal: Expense Details */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-30 overflow-auto">
-          <div className="bg-white p-6 rounded-md shadow-md w-11/12 max-w-sm">
-            <div className="justify-self-end">
-              <Button
-                icon={<MdOutlineCancel />}
-                color="rgb(153, 171, 180)"
-                bgHoverColor="light-gray"
-                size="2xl"
-                borderRadius="50%"
-                HandleOnSubmit={handleOnClick}
-                H="f"
-              />
-            </div>
+            {step === 1 && (
+              <>
+                <h2 className="text-xl font-bold mb-4 text-center">
+                  Add Expense
+                </h2>
+                <input
+                  type="text"
+                  placeholder="Description"
+                  className="w-full p-2 border rounded mb-2"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+                <input
+                  type="number"
+                  placeholder="Total Amount"
+                  className="w-full p-2 border rounded mb-4"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                />
 
-            <h2 className="text-lg font-semibold text-center mb-4">
-              Add Expense ({paymentType})
-            </h2>
-
-            {/* Display added items */}
-            {addedItems.length > 0 && (
-              <div className="mb-4 space-y-2">
-                {addedItems.map((item, idx) => (
-                  <div key={idx} className="p-2 border rounded bg-gray-100">
-                    <div className="font-semibold">
-                      {item.name} - ₹{item.price}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Consumers:{" "}
-                      {item.consumers
-                        .map((id) => users.find((user) => user.id === id)?.name)
-                        .join(", ")}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                <div className="flex justify-around mb-2">
+                  <button
+                    className="bg-green-500 text-white px-4 py-2 rounded"
+                    onClick={() => {
+                      if (!description || !totalAmount) {
+                        alert("Please enter description and total amount.");
+                        return;
+                      }
+                      setPaymentType("Full");
+                      setStep(2);
+                    }}
+                  >
+                    Full
+                  </button>
+                  <button
+                    className="bg-yellow-500 text-white px-4 py-2 rounded"
+                    onClick={() => {
+                      if (!description || !totalAmount) {
+                        alert("Please enter description and total amount.");
+                        return;
+                      }
+                      setPaymentType("Partial");
+                      setStep(2);
+                    }}
+                  >
+                    Partial
+                  </button>
+                </div>
+              </>
             )}
 
-            <input
-              type="text"
-              placeholder="Item Name"
-              className="w-full p-2 border rounded mb-2"
-              value={item}
-              onChange={(e) => setItem(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Unit Price"
-              className="w-full p-2 border rounded mb-4"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-
-            <div className="space-y-4">
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex justify-between items-center"
-                >
-                  <span>{user.name}</span>
-                  <div className="flex items-center gap-2">
+            {step === 2 && paymentType === "Full" && (
+              <>
+                <h3 className="text-lg font-semibold mb-2 text-center">
+                  Who Paid?
+                </h3>
+                <div className="flex justify-center gap-4 mb-4">
+                  {users.map((u) => (
                     <button
-                      className="w-7 h-7 bg-gray-200 rounded-full"
-                      onClick={() => handleQuantity(user.id, -1)}
+                      key={u.id}
+                      className={`w-12 h-12 rounded-full border ${
+                        payer === u.name ? "bg-green-500 text-white" : ""
+                      }`}
+                      onClick={() => setPayer(u.name)}
                     >
-                      -
+                      {u.name[0]}
                     </button>
-                    <span className="w-6 text-center">
-                      {quantities[user.id]}
-                    </span>
-                    <button
-                      className="w-7 h-7 bg-gray-200 rounded-full"
-                      onClick={() => handleQuantity(user.id, 1)}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {paymentType === "Partial" && (
-              <div className="mt-6">
-                <p className="font-medium mb-2">Select Payers:</p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {users.map((user) => (
-                    <div key={user.id}>
-                      <button
-                        className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm"
-                        onClick={() => togglePayerInput(user.id)}
-                      >
-                        {user.name}
-                      </button>
-                      {payerInputs[user.id] && (
-                        <div className="flex mt-2 items-center gap-2">
-                          <input
-                            type="number"
-                            placeholder="Amount paid"
-                            className="p-1 border rounded w-24"
-                            value={payerAmounts[user.id] || ""}
-                            onChange={(e) =>
-                              handlePayerAmount(user.id, e.target.value)
-                            }
-                          />
-                          <button
-                            className="bg-green-500 text-white text-sm px-2 py-1 rounded"
-                            onClick={() => confirmPayerAmount(user.id)}
-                          >
-                            Add
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   ))}
                 </div>
-              </div>
+                <button
+                  className="bg-blue-600 text-white w-full py-2 rounded"
+                  onClick={() => {
+                    if (!payer) {
+                      alert("Please select a payer.");
+                      return;
+                    }
+                    setStep(3);
+                  }}
+                >
+                  Next
+                </button>
+              </>
             )}
 
-            {/* {totalPaid > 0 && (
-              <div className="mt-4 text-sm font-medium">
-                Total Amount Paid: ₹{totalPaid.toFixed(2)}
-              </div>
-            )} */}
+            {step === 2 && paymentType === "Partial" && (
+              <>
+                <h3 className="text-lg font-semibold mb-2 text-center">
+                  Enter Paid Amounts
+                </h3>
+                {users.map((u) => (
+                  <div key={u.id} className="flex justify-between mb-2">
+                    <span>{u.name}</span>
+                    <input
+                      type="number"
+                      className="border p-1 rounded w-24"
+                      value={partialPayers[u.id] || ""}
+                      onChange={(e) =>
+                        handlePartialAmount(u.id, e.target.value)
+                      }
+                    />
+                  </div>
+                ))}
+                <div className="text-center mb-2">
+                  <span className="font-medium">Total Entered: </span>₹
+                  {Object.values(partialPayers).reduce(
+                    (sum, val) => sum + val,
+                    0
+                  )}
+                </div>
+                <button
+                  className="bg-blue-600 text-white w-full py-2 rounded mt-2"
+                  onClick={() => {
+                    const totalEntered = Object.values(partialPayers).reduce(
+                      (sum, val) => sum + val,
+                      0
+                    );
+                    if (totalEntered !== parseFloat(totalAmount)) {
+                      alert("Total payer amount must equal total amount.");
+                      return;
+                    }
+                    setStep(3);
+                  }}
+                >
+                  Next
+                </button>
+              </>
+            )}
 
-            <div className="mt-6 flex gap-2">
-              <button
-                className="bg-gray-300 text-black px-4 py-2 rounded w-1/2"
-                onClick={handleAddItem}
-              >
-                Add Item
-              </button>
-              <button
-                className="bg-blue-600 text-white px-4 py-2 rounded w-1/2"
-                onClick={handleSubmit}
-              >
-                Submit Expense
-              </button>
-            </div>
+            {step === 3 && (
+              <>
+                <h3 className="text-lg font-semibold mb-2 text-center">
+                  Add Items
+                </h3>
+                <input
+                  type="text"
+                  placeholder="Item Name"
+                  className="w-full p-2 border rounded mb-2"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                />
+                <input
+                  type="number"
+                  placeholder="Unit Price"
+                  className="w-full p-2 border rounded mb-4"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                />
+
+                {users.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between mb-2"
+                  >
+                    <span className="w-20">{u.name}</span>
+                    <button
+                      className={`w-16 px-2 py-1 rounded ${
+                        shared[u.id] ? "bg-green-200" : "bg-gray-200"
+                      }`}
+                      onClick={() => toggleShared(u.id)}
+                    >
+                      Shared: {shared[u.id] ? "Yes" : "No"}
+                    </button>
+                    {shared[u.id] && (
+                      <input
+                        type="number"
+                        placeholder="Count"
+                        className="w-16 border p-1 rounded"
+                        value={sharedCounts[u.id] || ""}
+                        onChange={(e) =>
+                          handleSharedCount(u.id, e.target.value)
+                        }
+                      />
+                    )}
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      className="w-16 border p-1 rounded"
+                      value={quantities[u.id] || ""}
+                      onChange={(e) => handleQuantity(u.id, e.target.value)}
+                    />
+                  </div>
+                ))}
+
+                <button
+                  className="bg-gray-500 text-white w-full py-2 rounded mb-2"
+                  onClick={handleAddItem}
+                >
+                  Add Item
+                </button>
+
+                {items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center bg-gray-100 p-2 rounded mb-1"
+                  >
+                    <div>
+                      {item.itemName} - ₹{item.totalItemCost.toFixed(2)}
+                    </div>
+                    <button onClick={() => deleteItem(idx)}>
+                      <MdDelete className="text-red-500" />
+                    </button>
+                  </div>
+                ))}
+
+                <div
+                  className={`rounded p-2 mb-2 flex justify-between items-center ${
+                    totalBill > parseFloat(totalAmount)
+                      ? "bg-red-200 text-red-800"
+                      : "bg-gray-100"
+                  }`}
+                >
+                  <div>
+                    <span className="font-medium">Total Bill: </span>₹
+                    {totalBill.toFixed(2)}
+                  </div>
+                  <div>
+                    <span className="font-medium">Left: </span>₹
+                    {remainingAmount.toFixed(2)}
+                  </div>
+                </div>
+
+                <button
+                  className="bg-green-600 text-white w-full py-2 rounded"
+                  onClick={handleSubmit}
+                  disabled={
+                    totalBill > parseFloat(totalAmount) ||
+                    parseFloat(totalAmount) <= 0
+                  }
+                >
+                  Submit Expense
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

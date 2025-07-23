@@ -1,17 +1,36 @@
-import React, { useState, useMemo } from "react";
-import { employeesData } from "../data/dummy";
+import React, { useState, useMemo, useEffect } from "react";
 import { Header } from "../components";
 import { TiDelete } from "react-icons/ti";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import axiosInstance from "../api/axiosInstance";
 
 const Joined = () => {
   const loc = useLocation().pathname.slice(1);
+  const navigate = useNavigate();
 
-  const [data, setData] = useState(employeesData);
+  const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (loc !== "k=joined") {
+          const response = await axiosInstance.get("/findmygroups");
+          setData(response.data);
+        } else {
+          const response = await axiosInstance.get("/findothergroups");
+          setData(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const gridEmployeeProfile = (props) => (
     <div className="flex items-center gap-2">
@@ -26,20 +45,20 @@ const Joined = () => {
 
   const tabGrid = [
     {
-      field: "Group_Name",
+      field: "groupName",
       headerText: "Squad",
       width: "150",
       template: gridEmployeeProfile,
       textAlign: "Center",
     },
     {
-      field: "Group_Id",
+      field: "groupId",
       headerText: "Squad Id",
       width: "100",
       textAlign: "Center",
     },
     {
-      field: "Date",
+      field: "dateOfCreation",
       headerText: "Date",
       width: "135",
       format: "yMd",
@@ -47,15 +66,9 @@ const Joined = () => {
     },
 
     {
-      field: "Admin",
+      field: "adminList",
       headerText: "Admin",
       width: "120",
-      textAlign: "Center",
-    },
-    {
-      field: "Expiry_Date",
-      headerText: "Expiry Date",
-      width: "125",
       textAlign: "Center",
     },
   ];
@@ -158,7 +171,11 @@ const Joined = () => {
             {paginatedData.map((item, i) => {
               const realIndex = (currentPage - 1) * pageSize + i;
               return (
-                <tr key={i} className="hover:bg-gray-50">
+                <tr
+                  key={i}
+                  className="hover:bg-gray-50"
+                  onClick={() => navigate(`/${loc}/${item.groupId}`)}
+                >
                   {tabGrid.map((col) => (
                     <td key={col.field} className="px-4 py-2 whitespace-nowrap">
                       {item[col.field]}
