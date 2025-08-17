@@ -18,7 +18,7 @@ const AuthContext = createContext({
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
-  const { setId, setName, setRole } = useUser();
+  const { setId, setName, setRole, role, setg, gid } = useUser();
 
   const [accessToken, setAccessToken] = useState(
     localStorage.getItem("accessToken")
@@ -26,7 +26,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
-  const arr = ["/signup", "/send-request", "/guest-login", "/enter-channel"];
+  const arr = [
+    "/signup",
+    "/send-request",
+    "/guest-login",
+    "/enter-channel",
+    "/forget",
+    "/newpass",
+  ];
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -38,11 +45,28 @@ export const AuthProvider = ({ children }) => {
         }
 
         try {
-          const response = await fetch("http://localhost:8080/check", {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
+          const response = await fetch(
+            "https://splitmate-8lmp.onrender.com/check",
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (response.status != 200) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("name");
+            localStorage.removeItem("role");
+            localStorage.removeItem("id");
+            localStorage.removeItem("gid");
+            setAccessToken("");
+            setId("");
+            setName("");
+            setRole("");
+            setg("");
+            navigate("/login");
+          }
 
           // if (response.status === 401) {
           //   // Access token invalid or expired, try refreshing
@@ -62,8 +86,22 @@ export const AuthProvider = ({ children }) => {
           // }
         } catch (error) {
           console.error("Auth check failed", error);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("name");
+          localStorage.removeItem("role");
+          localStorage.removeItem("id");
+          localStorage.removeItem("gid");
+          setAccessToken("");
+          setId("");
+          setName("");
+          setRole("");
+          setg("");
           navigate("/login");
         } finally {
+          if (accessToken && role == "GUEST") {
+            navigate(`/joined/${gid}`);
+            setLoading(false);
+          }
           setLoading(false);
         }
       } else {
@@ -73,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuth();
-  }, [accessToken, navigate, location.pathname]);
+  }, [navigate, location.pathname]);
 
   const login = async (userName, password) => {
     try {
@@ -97,11 +135,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const Enter_Channel = async (username, name) => {
+  const Enter_Channel = async (userName, name) => {
     try {
       const response = await axiosAuth.post("/login-user", {
-        username,
         name,
+        userName,
       });
       if (response.status === 200) {
         const token = response.data.jwttoken;
@@ -110,6 +148,7 @@ export const AuthProvider = ({ children }) => {
         setId(response.data.username);
         setName(response.data.name);
         setRole(response.data.role);
+        setg(response.data.username);
         return { success: true, response };
       }
       return { success: false, error: "Invalid response status" };
@@ -125,7 +164,6 @@ export const AuthProvider = ({ children }) => {
       password,
       phoneNo,
     });
-    console.log(response.data);
     if (response.status === 200) {
       return response;
     }
@@ -186,12 +224,53 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    console.log("is");
+  const forget = async (val, pass) => {
+    const result = await axiosAuth.post("/forget", {
+      password: val,
+      phoneNo: pass,
+    });
+    console.log(result);
+    if (result.status == 200) {
+      localStorage.setItem("accessToken", result.data.jwttoken);
+      setAccessToken(result.data.jwttoken);
+    } else {
+      showAlert("Invalid credentials, please try again.", "danger");
+    }
+    return result;
+  };
+
+  const newPass = async (val) => {
+    const result = await axiosInstance.post("/newpass", {
+      name: val,
+    });
+    if (result.status == 200) {
+      showAlert("Password Updated", "info");
+    } else {
+      showAlert("Invalid credentials, please try again.", "danger");
+    }
+    return result;
+  };
+
+  const logout = async () => {
+    if (role == "GUEST") {
+      try {
+        const res = await axiosInstance.get("/out");
+        if (res.status == 200) {
+        }
+      } catch (err) {
+        console.log("Error happened");
+      }
+    }
+    setAccessToken("");
+    setId("");
+    setName("");
+    setRole("");
+    setg("");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("name");
     localStorage.removeItem("role");
     localStorage.removeItem("id");
+    localStorage.removeItem("gid");
     navigate("/login");
   };
 
@@ -209,6 +288,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         sendRequest,
         Enter_Channel,
+        forget,
+        newPass,
       }}
     >
       {!loading && children}

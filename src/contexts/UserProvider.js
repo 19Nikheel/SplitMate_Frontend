@@ -7,12 +7,14 @@ const userContext = createContext({
   setId: () => {},
   role: "",
   setRole: () => {},
+  setg: () => {},
 });
 
 export const UserProvider = ({ children }) => {
   const [name, setame] = useState(localStorage.getItem("name"));
   const [id, setd] = useState(localStorage.getItem("id"));
   const [role, setole] = useState(localStorage.getItem("role"));
+  const [gid, setgid] = useState(localStorage.getItem("gid"));
 
   const setName = (n) => {
     localStorage.setItem("name", n);
@@ -29,6 +31,11 @@ export const UserProvider = ({ children }) => {
     setole(n);
   };
 
+  const setg = (n) => {
+    localStorage.setItem("gid", n);
+    setgid(n);
+  };
+
   return (
     <userContext.Provider
       value={{
@@ -38,6 +45,8 @@ export const UserProvider = ({ children }) => {
         setId,
         role,
         setRole,
+        gid,
+        setg,
       }}
     >
       {children}

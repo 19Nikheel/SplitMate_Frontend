@@ -2,18 +2,14 @@ import React, { useState } from "react";
 import axios from "axios";
 import { MdOutlineCancel, MdDelete } from "react-icons/md";
 import { useStateContext } from "../contexts/ContextProvider";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 
-const users = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" },
-  { id: 3, name: "Charlie" },
-];
-
 const AddExpenseMobile = () => {
-  const { show, setShows } = useStateContext();
-  const { groupId } = useParams();
+  const { show, setShows, users } = useStateContext();
+
+  const groupId = useLocation().pathname.split("/").pop();
+
   const [step, setStep] = useState(1);
   const [description, setDescription] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
@@ -62,14 +58,23 @@ const AddExpenseMobile = () => {
       .filter((u) => quantities[u.id] > 0)
       .map((u) => ({
         name: u.name,
-        quantity: shared[u.id]
-          ? quantities[u.id] / (sharedCounts[u.id] || 1)
-          : quantities[u.id],
+        // quantity: shared[u.id]
+        //   ? quantities[u.id] / (sharedCounts[u.id] || 1)
+        //   : quantities[u.id],
+        quantity: quantities[u.id],
         isShared: shared[u.id] ? sharedCounts[u.id] || 1 : 0,
       }));
 
     const totalItemCost =
-      parseFloat(unitPrice) * consumers.reduce((sum, c) => sum + c.quantity, 0);
+      parseFloat(unitPrice) *
+      consumers.reduce(
+        (sum, c) =>
+          sum +
+          (c.isShared == 0
+            ? parseFloat(c.quantity)
+            : parseFloat(c.quantity) / parseFloat(c.isShared)),
+        0
+      );
 
     setItems((prev) => [
       ...prev,
@@ -97,6 +102,17 @@ const AddExpenseMobile = () => {
   const remainingAmount = parseFloat(totalAmount) - totalBill;
   const tax = remainingAmount >= 0 ? remainingAmount : 0;
 
+  const handleSetshow = () => {
+    setShows(false);
+    setStep(1);
+    setDescription("");
+    setTotalAmount("");
+    setPaymentType("");
+    setPayer(null);
+    setPartialPayers({});
+    setItems([]);
+  };
+
   const handleSubmit = async () => {
     if (!description || !totalAmount || items.length === 0) {
       alert("Please fill all fields before submitting.");
@@ -107,7 +123,7 @@ const AddExpenseMobile = () => {
       description,
       totalMoney: parseFloat(totalAmount),
       tax,
-      groupId: groupId || "Test1",
+      groupId: groupId || 0,
       payers:
         paymentType === "Full"
           ? [{ name: payer, amount: parseFloat(totalAmount) }]
@@ -120,13 +136,11 @@ const AddExpenseMobile = () => {
       items,
     };
 
-    console.log("Submitting payload:", payload);
-
     try {
-      const res = await axiosInstance.post("/api/post", payload);
-      console.log("Expense saved:", res.data);
+      const res = await axiosInstance.post("/post", payload);
+      window.dispatchEvent(new Event("refreshLogs"));
       // Reset all
-      setShows(false);
+      handleSetshow();
       setStep(1);
       setDescription("");
       setTotalAmount("");
@@ -148,7 +162,7 @@ const AddExpenseMobile = () => {
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
               onClick={() => {
                 setStep(1);
-                setShows(false);
+                handleSetshow();
               }}
             >
               <MdOutlineCancel size={24} />
@@ -214,12 +228,12 @@ const AddExpenseMobile = () => {
                   {users.map((u) => (
                     <button
                       key={u.id}
-                      className={`w-12 h-12 rounded-full border ${
+                      className={`w-12 h-12 rounded-full border items-center justify-center overflow-hidden truncate text-xs ${
                         payer === u.name ? "bg-green-500 text-white" : ""
                       }`}
                       onClick={() => setPayer(u.name)}
                     >
-                      {u.name[0]}
+                      {u.name}
                     </button>
                   ))}
                 </div>
@@ -319,7 +333,7 @@ const AddExpenseMobile = () => {
                     {shared[u.id] && (
                       <input
                         type="number"
-                        placeholder="Count"
+                        placeholder="Shared"
                         className="w-16 border p-1 rounded"
                         value={sharedCounts[u.id] || ""}
                         onChange={(e) =>

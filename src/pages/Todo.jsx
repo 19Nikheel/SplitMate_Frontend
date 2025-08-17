@@ -6,7 +6,6 @@ import React, { useState } from "react";
 // } from "@syncfusion/ej2-react-Todo";
 import { TiDelete } from "react-icons/ti";
 
-import { TodoData, TodoGrid } from "../data/dummy";
 import { Header } from "../components";
 
 const Todo = () => {

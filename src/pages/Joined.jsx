@@ -9,6 +9,8 @@ const Joined = () => {
   const navigate = useNavigate();
 
   const [data, setData] = useState([]);
+  const [data1, setData2] = useState([]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,12 +19,18 @@ const Joined = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (loc !== "k=joined") {
+        setData([]);
+        setData2([]);
+        setSearchTerm("");
+        setSortConfig({ key: "", direction: "asc" });
+        setCurrentPage(1);
+
+        if (loc !== "joined") {
           const response = await axiosInstance.get("/findmygroups");
           setData(response.data);
         } else {
           const response = await axiosInstance.get("/findothergroups");
-          setData(response.data);
+          setData2(response.data);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -30,7 +38,7 @@ const Joined = () => {
     };
 
     fetchData();
-  }, []);
+  }, [loc]);
 
   const gridEmployeeProfile = (props) => (
     <div className="flex items-center gap-2">
@@ -74,7 +82,7 @@ const Joined = () => {
   ];
 
   const sortedData = useMemo(() => {
-    let filtered = [...data];
+    let filtered = loc === "hosted" ? [...data] : [...data1];
 
     if (searchTerm) {
       filtered = filtered.filter((item) =>
@@ -97,7 +105,7 @@ const Joined = () => {
     }
 
     return filtered;
-  }, [data, searchTerm, sortConfig]);
+  }, [data, data1, loc, searchTerm, sortConfig]);
 
   const totalPages = Math.ceil(sortedData.length / pageSize);
   const paginatedData = sortedData.slice(
@@ -112,17 +120,17 @@ const Joined = () => {
     }));
   };
 
-  const handleDelete = (index) => {
-    console.log(loc);
+  // const handleDelete = (index) => {
+  //   console.log(loc);
 
-    const updated = [...data];
-    updated.splice(index, 1);
-    setData(updated);
-  };
+  //   const updated = [...data];
+  //   updated.splice(index, 1);
+  //   setData(updated);
+  // };
 
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
-      <Header category="Page" title="Employees" />
+      <Header category="Page" title={loc === "joined" ? "Joined" : "Hosted"} />
 
       <div className="flex justify-end mb-4">
         <input
@@ -159,12 +167,6 @@ const Joined = () => {
                     : ""}
                 </th>
               ))}
-
-              {loc !== "joined" && (
-                <th className="px-4 py-2 bg-gray-100 text-sm font-semibold text-gray-700 whitespace-nowrap">
-                  Actions
-                </th>
-              )}
             </tr>
           </thead>
           <tbody>
@@ -181,17 +183,6 @@ const Joined = () => {
                       {item[col.field]}
                     </td>
                   ))}
-
-                  {loc !== "joined" && (
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleDelete(realIndex)}
-                        className="text-red-500 text-2xl p-2 hover:bg-red-100 rounded-full"
-                      >
-                        {<TiDelete />}
-                      </button>
-                    </td>
-                  )}
                 </tr>
               );
             })}

@@ -1,245 +1,267 @@
-import React, { useEffect, useState } from "react";
-import { BsCurrencyDollar } from "react-icons/bs";
-import { GoPrimitiveDot } from "react-icons/go";
-import { IoIosMore } from "react-icons/io";
-import { DropDownListComponent } from "@syncfusion/ej2-react-dropdowns";
-
-import { Stacked, Pie, Button, LineChart, SparkLine } from "../components";
-import {
-  earningData,
-  medicalproBranding,
-  recentTransactions,
-  weeklyStats,
-  dropdownData,
-  SparklineAreaData,
-  ecomPieChartData,
-} from "../data/dummy";
-import { useStateContext } from "../contexts/ContextProvider";
-import product9 from "../data/product9.jpg";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
+import axiosInstance, { axiosAuth } from "../api/axiosInstance";
+import { useUser } from "../contexts/UserProvider";
+import { useAlert } from "../contexts/AlertContext";
 
-const DropDown = ({ currentMode }) => (
-  <div className="w-28 border-1 border-color px-2 py-1 rounded-md">
-    <DropDownListComponent
-      id="time"
-      fields={{ text: "Time", value: "Id" }}
-      style={{ border: "none", color: currentMode === "Dark" && "white" }}
-      value="1"
-      dataSource={dropdownData}
-      popupHeight="220px"
-      popupWidth="120px"
-    />
-  </div>
-);
-
-// import React, { useState, useEffect } from "react";
-// import { useNavigate } from "react-router-dom";
-// import axios from "axios";
-
-const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white p-6 rounded shadow-md w-11/12 max-w-sm relative">
-      <button
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-        onClick={onClose}
-      >
-        ✕
-      </button>
-      <h2 className="text-lg font-semibold mb-4 text-center">{title}</h2>
-      {children}
-    </div>
-  </div>
-);
-
-const Home = () => {
+export default function Home() {
   const navigate = useNavigate();
+  const { role } = useUser();
+  const { showAlert } = useAlert();
 
-  const [latestCreatedRooms, setLatestCreatedRooms] = useState([]);
-  const [latestJoinedGroups, setLatestJoinedGroups] = useState([]);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showSendRequest, setShowSendRequest] = useState(false);
+  const [showBecomeMember, setShowBecomeMember] = useState(false);
 
-  const [modalType, setModalType] = useState(null); // "createRoom", "sendRequest", "joinRoom", "becomeMember"
-  const [inputValue, setInputValue] = useState("");
-  const [mobileNumber, setMobileNumber] = useState("");
-  const [newPassword, setNewPassword] = useState("");
+  const [groupName, setGroupName] = useState("");
+  const [groupId, setGroupId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+
+  const [hostedGroups, setHostedGroups] = useState([]);
+  const [joinedGroups, setJoinedGroups] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchGroups = async () => {
       try {
-        // Replace dummy data with API calls
-        const createdRooms = [
-          { id: "CR001", name: "Dinner Party" },
-          { id: "CR002", name: "Project Meeting" },
-          { id: "CR003", name: "Birthday Prep" },
-          { id: "CR004", name: "Trip Plan" },
-          { id: "CR005", name: "Study Group" },
-        ];
+        const hostedRes = await axiosInstance.get(`/findmygroups`);
+        setHostedGroups(hostedRes.data.slice(0, 5));
 
-        const joinedGroups = [
-          { id: "JG001", name: "Roommates" },
-          { id: "JG002", name: "Friends Trip" },
-          { id: "JG003", name: "Office Team" },
-          { id: "JG004", name: "Family Group" },
-          { id: "JG005", name: "Startup Crew" },
-        ];
-
-        setLatestCreatedRooms(createdRooms);
-        setLatestJoinedGroups(joinedGroups);
-      } catch (error) {
-        console.error("Error fetching data:", error);
+        const joinedRes = await axiosInstance.get(`/findothergroups`);
+        setJoinedGroups(joinedRes.data.slice(0, 5));
+      } catch (err) {
+        console.error("Error fetching groups:", err);
+        showAlert(`Error fetching groups:${err}`, "danger");
       }
     };
-
-    fetchData();
+    fetchGroups();
   }, []);
 
-  const handleSubmit = () => {
-    if (!inputValue) {
-      alert("Please enter required input.");
-      return;
+  const handleCreateGroup = async () => {
+    try {
+      const res = await axiosInstance.post(`/group?groupName=${groupName}`);
+      if (res.status === 200) {
+        navigate(`/hosted/${res.data}`);
+      }
+    } catch (err) {
+      showAlert(`Error fetching groups:${err}`, "danger");
     }
-
-    console.log(`Submitting ${modalType}:`, inputValue);
-    setInputValue("");
-    setModalType(null);
   };
 
-  const handleBecomeMember = () => {
-    if (!mobileNumber || !newPassword) {
-      alert("Please fill both fields.");
+  const handleSendRequest = async () => {
+    try {
+      const res = await axiosInstance.post(`/send-request?groupId=${groupId}`);
+      if (res.status === 200) {
+        alert("Request sent successfully");
+        setGroupId("");
+        setShowSendRequest(false);
+      } else {
+        showAlert(`Error fetching groups`, "danger");
+      }
+    } catch (err) {
+      showAlert(`Error fetching groups`, "danger");
+    }
+  };
+
+  const handleBecomeMember = async () => {
+    if (newPass !== confirmPass) {
+      alert("Passwords do not match");
       return;
     }
+    try {
+      const res = await axiosInstance.post("/becomemember", {
+        phone,
+        password: newPass,
+      });
+      if (res.status === 200) {
+        alert("Member created successfully");
+        setPhone("");
+        setNewPass("");
+        setConfirmPass("");
+        setShowBecomeMember(false);
+      }
+    } catch (err) {
+      console.error("Error becoming member:", err);
+    }
+  };
 
-    console.log("Registering as member:", mobileNumber, newPassword);
-    setMobileNumber("");
-    setNewPassword("");
-    setModalType(null);
+  const closeModal = (setter) => {
+    setter(false);
+    setGroupName("");
+    setGroupId("");
+    setPhone("");
+    setNewPass("");
+    setConfirmPass("");
+  };
+
+  const openGroupDashboard = (grouId) => {
+    navigate(`/joined/${grouId}`);
+  };
+
+  const openHGroupDashboard = (grouId) => {
+    navigate(`/hosted/${grouId}`);
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8">
-        Welcome to SplitMate
-      </h1>
-
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      {/* Buttons in horizontal line */}
+      <div className="flex flex-col sm:flex-row w-full max-w-4xl gap-4 mb-8">
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded shadow"
-          onClick={() => setModalType("createRoom")}
+          className="flex-1 bg-blue-500 text-white px-6 py-4 rounded-xl text-lg"
+          onClick={() => setShowCreateGroup(true)}
         >
-          Create Room
+          Create Group
         </button>
 
         <button
-          className="bg-green-600 hover:bg-green-700 text-white py-3 rounded shadow"
-          onClick={() => setModalType("sendRequest")}
+          className="flex-1 bg-green-500 text-white px-6 py-4 rounded-xl text-lg"
+          onClick={() => setShowSendRequest(true)}
         >
           Send Request
         </button>
 
-        <button
-          className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded shadow"
-          onClick={() => setModalType("joinRoom")}
-        >
-          Join
-        </button>
-
-        <button
-          className="bg-purple-600 hover:bg-purple-700 text-white py-3 rounded shadow"
-          onClick={() => setModalType("becomeMember")}
-        >
-          Become a Member
-        </button>
+        {role == "GUEST_MEMBER" && (
+          <button
+            className="flex-1 bg-purple-500 text-white px-6 py-4 rounded-xl text-lg"
+            onClick={() => setShowBecomeMember(true)}
+          >
+            Become Member
+          </button>
+        )}
       </div>
 
-      {/* Latest Created Rooms */}
-      <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-3">Latest Created Rooms</h2>
-        <div className="bg-gray-50 rounded p-3 space-y-2 shadow">
-          {latestCreatedRooms.length > 0 ? (
-            latestCreatedRooms.map((room) => (
-              <div
-                key={room.id}
-                className="p-3 bg-white rounded shadow-sm flex justify-between items-center hover:bg-gray-100"
-              >
-                <span>{room.name}</span>
-                <button
-                  className="text-blue-600 text-sm font-medium"
-                  onClick={() => navigate(`/hosted/${room.id}`)}
+      {/* Hosted Groups Table */}
+      <div className="w-full max-w-4xl">
+        <h2 className="text-xl font-semibold mb-2">Your Hosted Groups</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white rounded shadow overflow-hidden">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="py-2 px-4 text-left">Group Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hostedGroups.map((group) => (
+                <tr
+                  key={group.groupId}
+                  className="cursor-pointer hover:bg-gray-100"
+                  onClick={() => openHGroupDashboard(group.groupId)}
                 >
-                  View
-                </button>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-600">No rooms created yet.</p>
-          )}
+                  <td className="py-2 px-4">{group.groupName}</td>
+                </tr>
+              ))}
+              {hostedGroups.length === 0 && (
+                <tr>
+                  <td className="py-2 px-4 text-gray-500">
+                    No hosted groups found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Latest Joined Groups */}
-      <div>
-        <h2 className="text-xl font-semibold mb-3">Latest Joined Groups</h2>
-        <div className="bg-gray-50 rounded p-3 space-y-2 shadow">
-          {latestJoinedGroups.length > 0 ? (
-            latestJoinedGroups.map((group) => (
-              <div
-                key={group.id}
-                className="p-3 bg-white rounded shadow-sm flex justify-between items-center hover:bg-gray-100"
-              >
-                <span>{group.name}</span>
-                <button
-                  className="text-green-600 text-sm font-medium"
-                  onClick={() => navigate(`/group/${group.id}`)}
+      {/* Joined Groups Table */}
+      <div className="w-full max-w-4xl mt-6">
+        <h2 className="text-xl font-semibold mb-2">Your Joined Groups</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white rounded shadow overflow-hidden">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="py-2 px-4 text-left">Group Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {joinedGroups.map((group) => (
+                <tr
+                  key={group.dateOfCreation}
+                  className="cursor-pointer hover:bg-gray-100"
+                  onClick={() => openGroupDashboard(group.groupId)}
                 >
-                  Open
-                </button>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-600">No groups joined yet.</p>
-          )}
+                  <td className="py-2 px-4">{group.groupName}</td>
+                </tr>
+              ))}
+              {joinedGroups.length === 0 && (
+                <tr>
+                  <td className="py-2 px-4 text-gray-500">
+                    No joined groups found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Modals */}
-      {modalType && modalType !== "becomeMember" && (
-        <Modal title={`Enter ${modalType}`}>
+      {showCreateGroup && (
+        <Modal onClose={() => closeModal(setShowCreateGroup)}>
+          <h2 className="text-lg font-bold mb-4">Create Group</h2>
           <input
             type="text"
-            placeholder={`Enter ${modalType} input`}
-            className="w-full p-2 border rounded mb-4"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="Enter group name"
+            className="w-full border p-2 mb-4"
           />
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white w-full py-2 rounded"
-            onClick={handleSubmit}
+            onClick={handleCreateGroup}
+            className="bg-blue-500 text-white px-4 py-2 rounded w-full"
           >
             Submit
           </button>
         </Modal>
       )}
 
-      {modalType === "becomeMember" && (
-        <Modal title="Become a Member" onClose={() => setModalType(null)}>
+      {showSendRequest && (
+        <Modal onClose={() => closeModal(setShowSendRequest)}>
+          <h2 className="text-lg font-bold mb-4">Send Group Request</h2>
           <input
             type="text"
-            placeholder="Mobile Number"
-            className="w-full p-2 border rounded mb-3"
-            value={mobileNumber}
-            onChange={(e) => setMobileNumber(e.target.value)}
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            placeholder="Enter group ID"
+            className="w-full border p-2 mb-4"
+          />
+          <button
+            onClick={handleSendRequest}
+            className="bg-green-500 text-white px-4 py-2 rounded w-full"
+          >
+            Submit
+          </button>
+        </Modal>
+      )}
+
+      {showBecomeMember && (
+        <Modal onClose={() => closeModal(setShowBecomeMember)}>
+          <h2 className="text-lg font-bold mb-4">Become Member</h2>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Enter phone number"
+            className="w-full border p-2 mb-4"
           />
           <input
             type="password"
-            placeholder="New Password"
-            className="w-full p-2 border rounded mb-4"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            value={newPass}
+            onChange={(e) => setNewPass(e.target.value)}
+            placeholder="Enter new password"
+            className="w-full border p-2 mb-4"
+          />
+          <input
+            type="password"
+            value={confirmPass}
+            onChange={(e) => setConfirmPass(e.target.value)}
+            placeholder="Confirm password"
+            className="w-full border p-2 mb-4"
           />
           <button
-            className="bg-purple-600 hover:bg-purple-700 text-white w-full py-2 rounded"
             onClick={handleBecomeMember}
+            className="bg-purple-500 text-white px-4 py-2 rounded w-full"
           >
             Submit
           </button>
@@ -247,6 +269,19 @@ const Home = () => {
       )}
     </div>
   );
-};
+}
 
-export default Home;
+// Modal Component
+function Modal({ children, onClose }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white rounded p-6 relative w-80">
+        <X
+          className="absolute top-2 right-2 cursor-pointer"
+          onClick={onClose}
+        />
+        {children}
+      </div>
+    </div>
+  );
+}

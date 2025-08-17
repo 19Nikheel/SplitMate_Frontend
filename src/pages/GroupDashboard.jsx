@@ -1,48 +1,49 @@
 import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 import "../components/GroupDashboard.css";
-import ac from "../data/avatar.jpg";
 import AddButton from "../components/AddButton";
-import { useLocation } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
-import { useUser } from "../contexts/UserProvider";
+import { useStateContext } from "../contexts/ContextProvider";
+import { useAlert } from "../contexts/AlertContext";
+import Modal from "../components/Modal";
+import Gdt1 from "../components/Gdt1";
+import { UserList } from "../components/UserList";
 
 const GroupDashboard = () => {
   const segment = useLocation().pathname.split("/").pop();
-  const { name } = useUser();
-  const [expandedId, setExpandedId] = useState(null);
-  const [show, set] = useState(null);
-  const [num, setnum] = useState(7);
 
-  const toggleDetails = (id, a) => {
-    setExpandedId(expandedId === id && show == a ? null : id);
-    set(a);
-  };
-  const dummyLogs = [
-    {
-      id: 1,
-      paidBy: ["Alice"],
-      items: [
-        { name: "Pizza", price: 300 },
-        { name: "Drinks", price: 150 },
-      ],
-      participants: [
-        { name: "Bob", amount: 200 },
-        { name: "Charlie", amount: 250 },
-      ],
-      time: "2025-06-14 10:15",
-    },
-    {
-      id: 2,
-      paidBy: ["David"],
-      items: [{ name: "Snacks", price: 200 }],
-      participants: [{ name: "Eve", amount: 200 }],
-      time: "2025-06-13 18:30",
-    },
-  ];
-  const [array, setarray] = useState(dummyLogs);
+  const navigate = useNavigate();
+  const showAlert = useAlert();
+
+  const [num, setnum] = useState(7);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [array, setarray] = useState([]);
   const [gname, setGname] = useState("");
   const [amount, setAmount] = useState("");
-  const [users, setUser] = useState([]);
+  const { users, setUser } = useStateContext();
+
+  const fetchLogs = async () => {
+    try {
+      const data = await axiosInstance.get(`/findlog/${segment}`);
+      setarray(data.data);
+    } catch (error) {
+      console.error("Error fetching logs:", error.response.data);
+    }
+  };
+
+  const handleLogdel = async (k) => {
+    if (window.confirm("Are you sure you want to delete this Log?")) {
+      k = parseInt(k);
+      try {
+        await axiosInstance.delete(`/delete/${k}`);
+        alert("log Group deleted successfully");
+        navigate("/home");
+      } catch (err) {
+        console.error("Error deleting group:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -53,105 +54,146 @@ const GroupDashboard = () => {
         const amount = await axiosInstance.get(`/findtotal/${segment}`);
         setAmount(amount.data);
 
-        const data = await axiosInstance.get(`/findlog/${segment}`);
-        setarray(data.data);
-
         const usep = await axiosInstance.get(`/findalluser/${segment}`);
         setUser(usep.data);
-        console.log(usep);
+
+        const data = await axiosInstance.get(`/findlog/${segment}`);
+        setarray(data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
 
     fetch();
+    window.addEventListener("refreshLogs", fetchLogs);
+    return () => {
+      window.removeEventListener("refreshLogs", fetchLogs);
+    };
   }, []);
 
-  // const users = [
-  //   { name: "Alice", image: { ac }, isHost: true },
-  //   { name: "Bob", image: "../data/avatar2.jpg" },
-  //   { name: "Charlie", image: "../data/avatar3.jpg" },
-  //   { name: "Diana", image: "../data/avatar4.jpg" },
-  //   { name: "Extra", image: "../data/avatar.jpg" },
-  //   { name: "Alice", image: { ac }, isHost: true },
-  //   { name: "Bob", image: "../data/avatar2.jpg" },
-  //   { name: "Charlie", image: "../data/avatar3.jpg" },
-  //   { name: "Diana", image: "../data/avatar4.jpg" },
-  //   { name: "Extra", image: "../data/avatar.jpg" }, // won't show due to max 4
-  // ];
-
   return (
-    <div className="gbox flex-grow mt-24 mb-32">
+    <div className="gbox flex-grow mt-14 mb-32 p-4">
       {<AddButton />}
-      <div className="header">
-        <div className="lbox">{gname}</div>
-        <div className="rbox">Total Expense: {amount}</div>
-      </div>
 
-      <div className="mid">
+      <Gdt1 segment={segment} gname={gname} amount={amount} />
+
+      <div className="mid overflow-x-auto">
         <div className="logs">
-          <table className="log-table">
-            <thead>
+          <table className="log-table min-w-full bg-white rounded shadow overflow-hidden">
+            <thead className="bg-gray-200">
               <tr>
-                <th>Paid By</th>
-                <th>Item</th>
-                <th>Participants</th>
-                <th>total Amount</th>
+                <th className="py-2 px-4 text-left">Paid By</th>
+                <th className="py-2 px-4 text-left">Item</th>
+                <th className="py-2 px-4 text-left">Participants</th>
+                <th className="py-2 px-4 text-left">Total Amount</th>
               </tr>
             </thead>
             <tbody>
               {array.slice(0, num).map((log) => (
-                <React.Fragment key={log.id}>
-                  <tr>
-                    <td>
-                      <button className="name-btn">
-                        {log.paidBy.map((item) => item).join(", ")}
-                      </button>
-                    </td>
-                    <td>
-                      <button className="name-btn">
-                        {log.items.map((item) => item).join(", ")}
-                      </button>
-                    </td>
-                    <td>
-                      <button className="name-btn">
-                        {log.participants.map((p) => p).join(", ")}
-                      </button>
-                    </td>
-                    <td>
-                      <button className="name-btn">{log.amount}</button>
-                    </td>
-                  </tr>
-                </React.Fragment>
+                <tr
+                  key={log.id}
+                  className={`border-b cursor-pointer hover:bg-gray-100 ${
+                    log.isDeleted ? "bg-red-100" : ""
+                  }`}
+                  onClick={async () => {
+                    try {
+                      const res = await axiosInstance.get(
+                        `/findsinglelog/${log.id}`
+                      );
+                      //console.log(res.data);
+                      setSelectedLog(res.data); // assuming it returns the full JSON structure
+                    } catch (err) {
+                      showAlert("Failed to load log details", "danger");
+                    }
+                  }}
+                >
+                  <td className="py-2 px-4">
+                    <button className="name-btn">
+                      {log.paidBy.map((item) => item).join(", ")}
+                    </button>
+                  </td>
+                  <td className="py-2 px-4">
+                    <button className="name-btn">
+                      {log.items.map((item) => item).join(", ")}
+                    </button>
+                  </td>
+                  <td className="py-2 px-4">
+                    <button className="name-btn">
+                      {log.participants.map((p) => p).join(", ")}
+                    </button>
+                  </td>
+                  <td className="py-2 px-4">{log.amount}</td>
+                </tr>
               ))}
             </tbody>
           </table>
+
           <div
-            className="show-more"
+            className="show-more text-center mt-2 text-blue-500 cursor-pointer"
             onClick={() => {
-              num == array.length ? setnum(7) : setnum(array.length);
+              num === array.length ? setnum(7) : setnum(array.length);
             }}
           >
             {array.length > 7 && num !== array.length && "Show More..."}
-            {num == array.length && "Show Less..."}
+            {num === array.length && "Show Less..."}
           </div>
         </div>
       </div>
 
-      <div className="smid flex flex-wrap gap-4 p-4 pr-8 mr-12">
-        {users.slice(0, 8).map((user, index) => (
-          <div key={index} className="flex flex-col items-center">
-            <img
-              src={user.image}
-              alt={user.name}
-              className={`w-16 h-16 rounded-full border-4 ${
-                user.name === name ? "border-yellow-500" : "border-gray-300"
-              }`}
-            />
-            <p className="text-sm mt-1">{user.name}</p>
+      <UserList users={users}></UserList>
+
+      {selectedLog && (
+        <Modal title="Expense Details" onClose={() => setSelectedLog(null)}>
+          <div className="space-y-3 text-sm max-h-[60vh] overflow-y-auto">
+            <p>
+              <strong>Description:</strong> {selectedLog.description}
+            </p>
+            <p>
+              <strong>Total:</strong> ₹{selectedLog.totalMoney}
+            </p>
+            <p>
+              <strong>Tax:</strong> ₹{selectedLog.tax}
+            </p>
+            <p>
+              <strong>Group ID:</strong> {selectedLog.groupId}
+            </p>
+
+            <div>
+              <h3 className="font-semibold mt-2">Payers:</h3>
+              <ul className="list-disc list-inside">
+                {selectedLog.payers.map((payer, i) => (
+                  <li key={i}>
+                    {payer.name} paid ₹{payer.amount}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mt-2">Items:</h3>
+              {selectedLog.items.map((item, i) => (
+                <div key={i} className="border-t pt-2 mt-2">
+                  <p>
+                    <strong>{item.itemName}</strong> - ₹{item.unitPrice} x{" "}
+                    {item.quantity}
+                  </p>
+                  <p className="text-xs text-gray-600">Consumers:</p>
+                  <ul className="list-disc list-inside text-xs ml-4">
+                    {item.consumers.map((c, j) => (
+                      <li key={j}>
+                        {c.name} - Qty: {c.quantity}, Shared: {c.isShared}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+          <button className="" onClick={() => handleLogdel(selectedLog.id)}>
+            <Trash2 size={20} />
+          </button>
+        </Modal>
+      )}
     </div>
   );
 };

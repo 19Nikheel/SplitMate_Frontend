@@ -3,7 +3,6 @@ import { MdOutlineCancel } from "react-icons/md";
 import { Link } from "react-router-dom";
 
 import { Button } from ".";
-import { userProfileData } from "../data/dummy";
 import { useStateContext } from "../contexts/ContextProvider";
 import avatar from "../data/avatar.jpg";
 import { useAuth } from "../contexts/AuthContext";
@@ -47,24 +46,6 @@ const UserProfile = () => {
         </div>
       </div>
       <div>
-        <div className="flex gap-5 border-b-1 border-color p-4 hover:bg-light-gray cursor-pointer  dark:hover:bg-[#42464D]">
-          <button
-            type="button"
-            style={{ color: "#03C9D7", backgroundColor: "#E5FAFB" }}
-            className=" text-xl rounded-lg p-3 hover:bg-light-gray"
-          >
-            {<BsCurrencyDollar />}
-          </button>
-
-          <div>
-            <p className="font-semibold dark:text-gray-200 ">My Profile</p>
-            <p className="text-gray-500 text-sm dark:text-gray-400">
-              {" "}
-              {"Account Settings"}{" "}
-            </p>
-          </div>
-        </div>
-
         <div className="flex gap-5 border-b-1 border-color p-4 hover:bg-light-gray cursor-pointer  dark:hover:bg-[#42464D]">
           <Link
             to="/Todo"

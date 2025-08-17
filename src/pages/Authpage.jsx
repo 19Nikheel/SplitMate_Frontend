@@ -2,7 +2,7 @@ import { Link, Route, Routes, useLocation } from "react-router-dom";
 import Button from "../components/Button";
 import { useStateContext } from "../contexts/ContextProvider";
 
-export const Authpage = ({ children }) => {
+const Authpage = ({ children }) => {
   const { currentColor } = useStateContext();
   const location = useLocation();
 
@@ -14,6 +14,8 @@ export const Authpage = ({ children }) => {
     { path: "/send-request", name: "Send Request" },
     { path: "/guest-login", name: "Guest Log in" },
     { path: "/enter-channel", name: "Enter Channel" },
+    // { path: "/newpass", name: "New Password" },
+    // { path: "/forgetpass", name: "Forget Password" },
   ];
 
   return (
@@ -40,3 +42,4 @@ export const Authpage = ({ children }) => {
     </div>
   );
 };
+export default Authpage;

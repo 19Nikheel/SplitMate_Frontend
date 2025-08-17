@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { Input } from "./Input";
 import Button from "./Button";
@@ -6,48 +7,55 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useAlert } from "../contexts/AlertContext";
 
-const EnterChannel = () => {
+const NewPass = () => {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
-
   const { currentColor } = useStateContext();
   const [name, setname] = useState("");
-  const [groupId, setGroupId] = useState("");
-  const { Enter_Channel } = useAuth();
+  const [pass, setpass] = useState("");
+  const { newPass } = useAuth();
 
   const HandleOnChange = (event) => {
-    setGroupId(event.target.value);
-  };
-
-  const HandleOnChangepass = (event) => {
     setname(event.target.value);
   };
+
+  const HandleOnChange2 = (event) => {
+    setpass(event.target.value);
+  };
+
   const Handleonsubmit = async () => {
-    const result = await Enter_Channel(groupId, name);
-    if (result.success) {
-      navigate("/");
+    if (pass !== name) {
+      showAlert("Password mismatch.", "danger");
     } else {
-      showAlert("Invalid credentials, please try again.", "danger");
+      const result = await newPass(name);
+      console.log(result.data);
+      if (result.status === 200) {
+        navigate("/login");
+      } else {
+        showAlert("Somehting Wrong , please try again.", "danger");
+      }
+      setname("");
     }
-    setname(""), setGroupId("");
   };
 
   return (
     <div className="box">
       <Input
         type="text"
-        label="GroupId"
-        placeholder="Enter GroupId"
+        label="Password"
+        placeholder="Enter password"
         HandleOnChange={HandleOnChange}
-        val={groupId}
-      />
-      <Input
-        type="text"
-        label="Name"
-        placeholder="Enter Name"
-        HandleOnChange={HandleOnChangepass}
         val={name}
       />
+
+      <Input
+        type="password"
+        label="Confirm password"
+        placeholder="Enter password"
+        HandleOnChange={HandleOnChange2}
+        val={pass}
+      />
+
       <Button
         color="btn btn-primary btp"
         bgColor={currentColor}
@@ -60,4 +68,5 @@ const EnterChannel = () => {
     </div>
   );
 };
-export default EnterChannel;
+
+export default NewPass;

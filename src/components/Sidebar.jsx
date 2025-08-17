@@ -15,7 +15,6 @@ import {
 import { FiPieChart } from "react-icons/fi";
 import { BsKanban } from "react-icons/bs";
 import { IoMdContacts } from "react-icons/io";
-import { links } from "../data/dummy";
 import { useStateContext } from "../contexts/ContextProvider";
 import { RiContactsLine, RiStockLine } from "react-icons/ri";
 const Sidebar = () => {
@@ -50,14 +49,14 @@ const Sidebar = () => {
       name: "Todo",
       icon: <BsKanban />,
     },
-    {
-      name: "line",
-      icon: <AiOutlineStock />,
-    },
-    {
-      name: "pie",
-      icon: <FiPieChart />,
-    },
+    // {
+    //   name: "line",
+    //   icon: <AiOutlineStock />,
+    // },
+    // {
+    //   name: "pie",
+    //   icon: <FiPieChart />,
+    // },
   ];
 
   const activeLink =

@@ -1,63 +1,70 @@
+import React from "react";
 import { useState } from "react";
 import { Input } from "./Input";
 import Button from "./Button";
 import { useStateContext } from "../contexts/ContextProvider";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { useAlert } from "../contexts/AlertContext";
 
-const EnterChannel = () => {
-  const navigate = useNavigate();
-  const { showAlert } = useAlert();
+import { useNavigate } from "react-router-dom";
+import { axiosAuth } from "../api/axiosInstance";
 
+const Forgetpass = () => {
+  const { forget } = useAuth();
+  const navigate = useNavigate();
   const { currentColor } = useStateContext();
-  const [name, setname] = useState("");
-  const [groupId, setGroupId] = useState("");
-  const { Enter_Channel } = useAuth();
+  const { showAlert } = useAlert();
+  const [val, setval] = useState("");
+  const [pass, setpass] = useState("");
 
   const HandleOnChange = (event) => {
-    setGroupId(event.target.value);
+    setval(event.target.value);
   };
 
   const HandleOnChangepass = (event) => {
-    setname(event.target.value);
+    setpass(event.target.value);
   };
+
   const Handleonsubmit = async () => {
-    const result = await Enter_Channel(groupId, name);
-    if (result.success) {
-      navigate("/");
-    } else {
+    try {
+      const result = await forget(val, pass);
+      console.log(result);
+      setval("");
+      setpass("");
+      navigate("/newpass");
+    } catch (err) {
       showAlert("Invalid credentials, please try again.", "danger");
     }
-    setname(""), setGroupId("");
   };
 
   return (
     <div className="box">
       <Input
         type="text"
-        label="GroupId"
-        placeholder="Enter GroupId"
+        label="UserName"
+        placeholder="Enter Username"
         HandleOnChange={HandleOnChange}
-        val={groupId}
+        val={val}
+        req={"l"}
       />
       <Input
         type="text"
-        label="Name"
-        placeholder="Enter Name"
+        label="Phone Number"
+        placeholder="Enter phone no"
         HandleOnChange={HandleOnChangepass}
-        val={name}
+        val={pass}
+        req={"k"}
       />
       <Button
         color="btn btn-primary btp"
         bgColor={currentColor}
         width="40"
         borderRadius="10px"
-        text="Log in"
+        text="Login"
         H="k"
         HandleOnSubmit={Handleonsubmit}
       />
     </div>
   );
 };
-export default EnterChannel;
+export default Forgetpass;

@@ -14,14 +14,48 @@ import {
 } from "@syncfusion/ej2-react-schedule";
 import { DatePickerComponent } from "@syncfusion/ej2-react-calendars";
 
-import { scheduleData } from "../data/dummy";
 import { Header } from "../components";
 
 // eslint-disable-next-line react/destructuring-assignment
 const PropertyPane = (props) => <div className="mt-5">{props.children}</div>;
 
-const Scheduler = () => {
+const Calendar = () => {
   const [scheduleObj, setScheduleObj] = useState();
+
+  const scheduleData = [
+    {
+      Id: 1,
+      Subject: "Explosion of Betelgeuse Star",
+      Location: "Space Center USA",
+      StartTime: "2025-08-10T04:00:00.000Z",
+      EndTime: "2025-08-10T05:30:00.000Z",
+      CategoryColor: "#1aaa55",
+    },
+    {
+      Id: 2,
+      Subject: "Thule Air Crash Report",
+      Location: "Newyork City",
+      StartTime: "2021-01-11T06:30:00.000Z",
+      EndTime: "2021-01-11T08:30:00.000Z",
+      CategoryColor: "#357cd2",
+    },
+    {
+      Id: 3,
+      Subject: "Blue Moon Eclipse",
+      Location: "Space Center USA",
+      StartTime: "2021-01-12T04:00:00.000Z",
+      EndTime: "2021-01-12T05:30:00.000Z",
+      CategoryColor: "#7fa900",
+    },
+    {
+      Id: 4,
+      Subject: "Meteor Showers in 2021",
+      Location: "Space Center USA",
+      StartTime: "2021-01-13T07:30:00.000Z",
+      EndTime: "2021-01-13T09:00:00.000Z",
+      CategoryColor: "#ea7a57",
+    },
+  ];
 
   const change = (args) => {
     scheduleObj.selectedDate = args.value;
@@ -73,4 +107,4 @@ const Scheduler = () => {
   );
 };
 
-export default Scheduler;
+export default Calendar;

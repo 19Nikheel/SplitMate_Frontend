@@ -7,7 +7,7 @@ import { useAlert } from "../contexts/AlertContext";
 
 import { useNavigate } from "react-router-dom";
 
-export const Login = () => {
+const Login = () => {
   const navigate = useNavigate();
 
   const { currentColor } = useStateContext();
@@ -22,6 +22,10 @@ export const Login = () => {
 
   const HandleOnChangepass = (event) => {
     setpass(event.target.value);
+  };
+
+  const HandleonSub = async () => {
+    navigate("/forget");
   };
   const Handleonsubmit = async () => {
     const result = await login(val, pass);
@@ -61,6 +65,17 @@ export const Login = () => {
         H="k"
         HandleOnSubmit={Handleonsubmit}
       />
+      <Button
+        color="btn btn-primary btp"
+        bgColor={currentColor}
+        width="40"
+        borderRadius="10px"
+        text="Forget Password"
+        H="k"
+        HandleOnSubmit={HandleonSub}
+      />
     </div>
   );
 };
+
+export default Login;

@@ -26,7 +26,7 @@ const reducer = (current, action) => {
   }
 };
 
-export const Signup = () => {
+const Signup = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
   const { showAlert } = useAlert();
@@ -41,9 +41,9 @@ export const Signup = () => {
     const { val, pass, phone } = state;
     if (val && pass && phone) {
       const result = await signup(val, pass, phone);
-      console.log(result);
       if (result.status === 200) {
         showAlert("User ID :." + result.data, "info");
+        alert("User ID :." + result.data, "info");
         setTimeout(() => {
           navigate("/login");
         }, 5000);
@@ -90,3 +90,4 @@ export const Signup = () => {
     </div>
   );
 };
+export default Signup;

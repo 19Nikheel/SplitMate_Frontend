@@ -5,7 +5,7 @@ import { useStateContext } from "../contexts/ContextProvider";
 import { axiosAuth } from "../api/axiosInstance";
 import { useAuth } from "../contexts/AuthContext";
 import { useAlert } from "../contexts/AlertContext";
-export const SendRequest = () => {
+const SendRequest = () => {
   const { currentColor } = useStateContext();
   const [val, setval] = useState("");
   const [name, setname] = useState("");
@@ -57,3 +57,4 @@ export const SendRequest = () => {
     </div>
   );
 };
+export default SendRequest;

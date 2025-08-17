@@ -35,7 +35,7 @@ export const Alert = ({ type = "info", desc }) => {
 
   return (
     <div
-      className={`flex items-center p-4 mb-4 text-sm border rounded-lg shadow-md alert-container ${bg} ${text} ${border}`}
+      className={`mt-4 flex flex-col sm:flex-row items-center p-4 sm:p-6 mb-4 text-sm sm:text-base border rounded-lg shadow-md alert-container ${bg} ${text} ${border}`}
       role="alert"
     >
       {icon}

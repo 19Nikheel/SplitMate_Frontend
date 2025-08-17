@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "https://splitmate-8lmp.onrender.com",
   withCredentials: false,
   headers: {
     "Content-Type": "application/json",
@@ -9,7 +9,7 @@ const axiosInstance = axios.create({
 });
 
 export const axiosAuth = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "https://splitmate-8lmp.onrender.com",
   withCredentials: false,
   headers: {
     "Content-Type": "application/json",

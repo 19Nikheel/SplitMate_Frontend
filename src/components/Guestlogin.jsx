@@ -5,7 +5,7 @@ import { useStateContext } from "../contexts/ContextProvider";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export const Guestlogin = () => {
+const Guestlogin = () => {
   const navigate = useNavigate();
   const { currentColor } = useStateContext();
   const [name, setname] = useState("");
@@ -47,3 +47,4 @@ export const Guestlogin = () => {
     </div>
   );
 };
+export default Guestlogin;
